@@ -37,7 +37,15 @@ module.exports = function(app, useCors) {
       return;
     }
     console.log('Request for %s - Rasterizing it', url);
-    processImageUsingRasterizer(options, filePath, res, callbackUrl, function(err) { if(err) next(err); });
+    processImageUsingRasterizer(options, filePath, res, callbackUrl, function(err) {
+        if(err) {
+//            next(err);
+            console.log(err);
+            res.sendfile("public/no_image.png", function(err) {
+              if (err) { console.log(err); };
+            });
+        }
+    });
   });
 
   app.get('*', function(req, res, next) {
@@ -68,8 +76,11 @@ module.exports = function(app, useCors) {
     } else {
       // synchronous
       callRasterizer(rasterizerOptions, function(error) {
-        if (error) return callback(error);
-        sendImageInResponse(filePath, res, callback);
+        if (error) {
+            return callback(error);
+        } else {
+            sendImageInResponse(filePath, res, callback);
+        }
       });
     }
   }
@@ -77,7 +88,7 @@ module.exports = function(app, useCors) {
   var callRasterizer = function(rasterizerOptions, callback) {
     request.get(rasterizerOptions, function(error, response, body) {
       if (error || response.statusCode != 200) {
-        console.log('Error while requesting the rasterizer: %s', error.message);
+        console.log('Error while requesting the rasterizer: %s', body || error.message);
         rasterizerService.restartService();
         return callback(new Error(body));
       }
